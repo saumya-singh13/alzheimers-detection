@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alzheimer's Detection</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            text-align: center;
+            background: linear-gradient(to right, #a8edea, #fed6e3);
+            color: #333;
+            padding: 20px;
+        }
+        .container {
+            max-width: 500px;
+            margin: auto;
+            padding: 20px;
+            background: rgba(236, 140, 204, 0.8);
+            border-radius: 15px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        input, select, button {
+            margin: 10px;
+            padding: 10px;
+            width: 90%;
+            border: none;
+            border-radius: 5px;
+        }
+        button {
+            background: #ff7eb3;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        button:hover {
+            background: #ff4b91;
+            transform: scale(1.05);
+        }
+        #result {
+            margin-top: 20px;
+            font-size: 18px;
+            font-weight: bold;
+            padding: 15px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            display: none;
+            color: #444;
+        }
+        .loader {
+            display: none;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #ff7eb3;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        #image-preview {
+            margin-top: 15px;
+            max-width: 100%;
+            height: auto;
+            display: none;
+            border-radius: 10px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>🧠 Alzheimer's Detection & Risk Assessment</h2>
+        
+        <form id="upload-form">
+            <label>📷 Upload MRI Image:</label>
+            <input type="file" id="file" accept=".png, .jpg, .jpeg" required><br>
+            <img id="image-preview" alt="Image Preview">
+
+            <label>🎂 Age:</label>
+            <input type="number" id="age" min="20" max="100" required><br>
+
+            <label>👪 Family History of Alzheimer's?</label>
+            <select id="family_history">
+                <option value="no">No</option>
+                <option value="yes">Yes</option>
+            </select><br>
+
+            <label>💊 Select Medical Conditions:</label>
+            <select id="conditions" multiple>
+                <option value="diabetes">Diabetes</option>
+                <option value="hypertension">Hypertension</option>
+                <option value="cardiovascular">Cardiovascular Issues</option>
+                <option value="high_cholesterol">High Cholesterol</option>
+            </select><br>
+
+            <label>🏃‍♂️ Select Lifestyle Factors:</label>
+            <select id="lifestyle_factors" multiple>
+                <option value="smoking">Smoking</option>
+                <option value="sedentary">Sedentary Lifestyle</option>
+                <option value="poor_diet">Poor Diet</option>
+                <option value="alcohol">Excessive Alcohol</option>
+            </select><br>
+
+            <button type="submit">🚀 Submit</button>
+        </form>
+        
+        <div class="loader"></div>
+        <div id="result"></div>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            $("#file").change(function(event) {
+                let reader = new FileReader();
+                reader.onload = function(e) {
+                    $("#image-preview").attr("src", e.target.result).fadeIn();
+                };
+                reader.readAsDataURL(event.target.files[0]);
+            });
+
+            $("#upload-form").submit(function(event) {
+                event.preventDefault();
+                $(".loader").show();
+                $("#result").hide();
+
+                let formData = new FormData();
+                let fileInput = $("#file")[0].files[0];
+
+                formData.append("file", fileInput);
+                formData.append("age", $("#age").val());
+                formData.append("family_history", $("#family_history").val());
+                formData.append("conditions", JSON.stringify($("#conditions").val()));
+                formData.append("lifestyle_factors", JSON.stringify($("#lifestyle_factors").val()));
+
+                $.ajax({
+                    url: "/predict",
+                    type: "POST",
+                    data: formData,
+                    contentType: false,
+                    processData: false,
+                    success: function(response) {
+                        $(".loader").hide();
+                        $("#result").html(
+                            `<p>🧠 Brain-Level Dementia: <strong>${response.prediction}</strong></p>
+                             <p>⚠ Additional Risk Factor Score: <strong>${response.risk_score}</strong></p>
+                             <p>🔍 Lifestyle Impact: ${response.lifestyle_impact}</p>
+                             <p>💡 <strong>Tips:</strong> Maintain a healthy diet, stay physically active, engage in cognitive exercises, and get regular medical checkups to support brain health.</p>`
+                        ).fadeIn();
+                    },
+                    error: function() {
+                        $(".loader").hide();
+                        $("#result").html("<p style='color: red;'>❌ Error in prediction. Try again!</p>").fadeIn();
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
